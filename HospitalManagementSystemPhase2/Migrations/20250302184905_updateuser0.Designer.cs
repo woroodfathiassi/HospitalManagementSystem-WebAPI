@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HospitalManagementSystemPhase2.Migrations
 {
     [DbContext(typeof(HMSDBContext))]
-    [Migration("20250301202440_updateRole")]
-    partial class updateRole
+    [Migration("20250302184905_updateuser0")]
+    partial class updateuser0
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace HospitalManagementSystemPhase2.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Appointment", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Appointment", b =>
                 {
                     b.Property<int>("AppointmentId")
                         .ValueGeneratedOnAdd()
@@ -54,7 +54,7 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.ToTable("Appointments");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Bill", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Bill", b =>
                 {
                     b.Property<int>("BillId")
                         .ValueGeneratedOnAdd()
@@ -82,7 +82,7 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.ToTable("Bills");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Doctor", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Doctor", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -127,7 +127,7 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.ToTable("Doctors");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Medication", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Medication", b =>
                 {
                     b.Property<int>("MedicationId")
                         .ValueGeneratedOnAdd()
@@ -181,7 +181,7 @@ namespace HospitalManagementSystemPhase2.Migrations
                         });
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Patient", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Patient", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -218,7 +218,7 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.ToTable("Patients");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Prescription", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Prescription", b =>
                 {
                     b.Property<int>("PrescriptionId")
                         .ValueGeneratedOnAdd()
@@ -303,15 +303,15 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.ToTable("MedicationPrescription");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Appointment", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Appointment", b =>
                 {
-                    b.HasOne("HospitalManagementSystem.Entities.Doctor", "Doctor")
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Doctor", "Doctor")
                         .WithMany("Appointments")
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalManagementSystem.Entities.Patient", "Patient")
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Patient", "Patient")
                         .WithMany("Appointments")
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -322,44 +322,44 @@ namespace HospitalManagementSystemPhase2.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Bill", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Bill", b =>
                 {
-                    b.HasOne("HospitalManagementSystem.Entities.Prescription", "Prescription")
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Prescription", "Prescription")
                         .WithOne("Bill")
-                        .HasForeignKey("HospitalManagementSystem.Entities.Bill", "PrescriptionId")
+                        .HasForeignKey("HospitalManagementSystemPhase2.Entities.Bill", "PrescriptionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Prescription");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Doctor", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Doctor", b =>
                 {
                     b.HasOne("HospitalManagementSystemPhase2.Entities.User", "User")
                         .WithOne("Doctor")
-                        .HasForeignKey("HospitalManagementSystem.Entities.Doctor", "UserId");
+                        .HasForeignKey("HospitalManagementSystemPhase2.Entities.Doctor", "UserId");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Patient", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Patient", b =>
                 {
                     b.HasOne("HospitalManagementSystemPhase2.Entities.User", "User")
                         .WithOne("Patient")
-                        .HasForeignKey("HospitalManagementSystem.Entities.Patient", "UserId");
+                        .HasForeignKey("HospitalManagementSystemPhase2.Entities.Patient", "UserId");
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Prescription", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Prescription", b =>
                 {
-                    b.HasOne("HospitalManagementSystem.Entities.Doctor", "Doctor")
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Doctor", "Doctor")
                         .WithMany("Prescriptions")
                         .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalManagementSystem.Entities.Patient", "Patient")
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Patient", "Patient")
                         .WithMany("Prescriptions")
                         .HasForeignKey("PatientId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -383,34 +383,34 @@ namespace HospitalManagementSystemPhase2.Migrations
 
             modelBuilder.Entity("MedicationPrescription", b =>
                 {
-                    b.HasOne("HospitalManagementSystem.Entities.Medication", null)
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Medication", null)
                         .WithMany()
                         .HasForeignKey("MedicationsMedicationId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HospitalManagementSystem.Entities.Prescription", null)
+                    b.HasOne("HospitalManagementSystemPhase2.Entities.Prescription", null)
                         .WithMany()
                         .HasForeignKey("PrescriptionsPrescriptionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Doctor", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Doctor", b =>
                 {
                     b.Navigation("Appointments");
 
                     b.Navigation("Prescriptions");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Patient", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Patient", b =>
                 {
                     b.Navigation("Appointments");
 
                     b.Navigation("Prescriptions");
                 });
 
-            modelBuilder.Entity("HospitalManagementSystem.Entities.Prescription", b =>
+            modelBuilder.Entity("HospitalManagementSystemPhase2.Entities.Prescription", b =>
                 {
                     b.Navigation("Bill")
                         .IsRequired();

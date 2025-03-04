@@ -1,5 +1,5 @@
 ﻿using Azure;
-using HospitalManagementSystem.Entities;
+using HospitalManagementSystemPhase2.Entities;
 using HospitalManagementSystemPhase2.DTOs;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HospitalManagementSystem.Managements
+namespace HospitalManagementSystemPhase2.Managements
 {
     public class BillingManagement
     {
@@ -31,6 +31,14 @@ namespace HospitalManagementSystem.Managements
         {
             var bills = _context.Bills.AsNoTracking().ToList();
             return bills;
+        }
+
+        public Bill GetBillById(int id)
+        {
+            var bill = _context.Bills.FirstOrDefault(b => b.BillId == id);
+            if (bill == null)
+                throw new KeyNotFoundException("Bill not found.");
+            return bill;
         }
 
         //public List<Bill> GetBillsByPatientId(int patientId)

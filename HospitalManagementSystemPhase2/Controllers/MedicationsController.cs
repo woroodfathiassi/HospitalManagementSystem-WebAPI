@@ -1,11 +1,13 @@
-﻿using HospitalManagementSystem.Entities;
-using HospitalManagementSystem.Managements;
+﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Managements;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalManagementSystemPhase2.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize(Roles = "Admin")]
     public class MedicationsController : ControllerBase
     {
         MedicationManagement _medicationManager;

@@ -12,7 +12,6 @@ namespace HospitalManagementSystemPhase2.DTOs
         [MinLength(4, ErrorMessage = "Password must be at least 4 characters long.")]
         public string Password { get; set; }
 
-        [Required]
         [Compare(nameof(Password), ErrorMessage = "Passwords do not match.")]
         public string PasswordConf { get; set; }
 

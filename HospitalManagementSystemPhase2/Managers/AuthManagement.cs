@@ -1,7 +1,6 @@
-﻿using HospitalManagementSystem;
-using HospitalManagementSystem.Entities;
-using HospitalManagementSystemPhase2.DTOs;
+﻿using HospitalManagementSystemPhase2;
 using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.DTOs;
 using HospitalManagementSystemPhase2.MyExceptions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -58,19 +57,19 @@ namespace HospitalManagementSystemPhase2.Managers
             _context.SaveChanges();
         }
 
-        //public string Authenticate(LoginDto userlogin)
-        //{
-        //    var user = _context.Users
-        //        .Include(u => u.Roles)
-        //        .FirstOrDefault(u => u.UserName == userlogin.UserName && u.Password == userlogin.Password);
+        public string Authenticate(LoginDto userlogin)
+        {
+            var user = _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefault(u => u.UserName == userlogin.UserName && u.Password == userlogin.Password);
 
-        //    if (user == null)
-        //    {
-        //        throw new UnauthorizedAccessException("Invalid username or password.");
-        //    }
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException("Invalid username or password.");
+            }
 
-        //    return GenerateJwtToken(user);
-        //}
+            return GenerateJwtToken(user);
+        }
 
         private string GenerateJwtToken(User user)
         {
@@ -84,7 +83,7 @@ namespace HospitalManagementSystemPhase2.Managers
                 new Claim(ClaimTypes.Name, user.UserName),
                 new Claim("UserId", user.UserId.ToString()),
                 new Claim("UserName", user.UserName),
-                new Claim("UserName", user.UserName)
+                new Claim(ClaimTypes.Role, user.Role.Name)
             };
             JwtSecurityToken token = new JwtSecurityToken(
                 expires: DateTime.Now.AddHours(1),

@@ -1,13 +1,13 @@
-﻿using HospitalManagementSystem.Entities;
-using HospitalManagementSystem.Managements;
+﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Managements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalManagementSystemPhase2.Controllers
 {
-    //[Authorize]
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize] 
     public class DoctorsController : ControllerBase
     {
         DoctorManagement _DoctorManager;
@@ -18,7 +18,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
-        //[Authorize(Roles = "Doctor")]
+        [Authorize(Roles = "Admin")]
         public IActionResult GetDoctors()
         {
             var doctors = _DoctorManager.GetAllDoctors();
@@ -27,11 +27,22 @@ namespace HospitalManagementSystemPhase2.Controllers
 
 
         [HttpGet("{id:int}")]
+        [Authorize(Roles = "Admin,Doctor")]
         public IActionResult GetDoctor(int id)
         {
             if (id <= 0)
             {
                 return BadRequest("Invalid doctor ID.");
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != id.ToString())
+                {
+                    return Unauthorized();
+                }
             }
 
             var doctor = _DoctorManager.GetDoctorById(id);
@@ -45,6 +56,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public IActionResult AddDoctor([FromBody] Doctor doctor)
         {
             if (doctor == null)
@@ -65,13 +77,12 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin,Doctor")]
         public IActionResult UpdateDoctor(int id, [FromBody] Doctor doctor)
         {
-            var doc = _DoctorManager.GetDoctorById(id);
-
-            if (doc == null)
+            if (doctor == null)
             {
-                return NotFound($"Patient with ID {id} not found.");
+                return BadRequest("Doctor data is required.");
             }
 
             if (id != doctor.Id)
@@ -79,9 +90,21 @@ namespace HospitalManagementSystemPhase2.Controllers
                 return BadRequest("Invalid Ids.");
             }
 
-            if (doctor == null)
+            var doc = _DoctorManager.GetDoctorById(id);
+
+            if (doc == null)
             {
-                return BadRequest("Doctor data is required.");
+                return NotFound($"Patient with ID {id} not found.");
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != id.ToString())
+                {
+                    return Unauthorized();
+                }
             }
 
             try
@@ -96,6 +119,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpDelete("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public IActionResult DeleteDoctor(int id)
         {
             var doctor = _DoctorManager.GetDoctorById(id);

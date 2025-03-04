@@ -1,11 +1,13 @@
-﻿using HospitalManagementSystem.Entities;
-using HospitalManagementSystem.Managements;
+﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Managements;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalManagementSystemPhase2.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize]
     public class AppointmentsController : ControllerBase
     {
         AppointmentManagement _AppointmentManager;
@@ -15,6 +17,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult GetAppointments()
         {
             var appointments = _AppointmentManager.GetAllAppointments();
@@ -22,6 +25,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPost]
+        //[Authorize(Roles = "Admin,Doctor,Patient")]
         public IActionResult ScheduleAppointment([FromBody] Appointment appointment)
         {
             if (appointment == null)
@@ -42,11 +46,22 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Patient")]
         public IActionResult GetAppointmentByPatientId([FromQuery]int patientId)
         {
             if (patientId <= 0)
             {
                 return BadRequest("Invalid appointment with patient ID.");
+            }
+
+            if (User.IsInRole("Patient"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != patientId.ToString())
+                {
+                    return Unauthorized();
+                }
             }
 
             var appointments = _AppointmentManager.GetScheduleByPatientId(patientId);
@@ -60,11 +75,22 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,Doctor")]
         public IActionResult GetAppointmentByDoctorId([FromQuery] int doctorId)
         {
             if (doctorId <= 0)
             {
                 return BadRequest("Invalid appointment with doctor ID.");
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != doctorId.ToString())
+                {
+                    return Unauthorized();
+                }
             }
 
             var appointments = _AppointmentManager.GetScheduleByDoctorId(doctorId);
@@ -78,6 +104,38 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin,Doctor")]
+        public IActionResult UpdateAppointmentStatus(int id, int status)
+        {
+            if (id <= 0 || status <= 0)
+            {
+                return BadRequest("Invalid inputs.");
+            }
+
+            var app = _AppointmentManager.GetAppointmentById(id);
+
+            if (User.IsInRole("Doctor"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != app.Doctor.UserId.ToString())
+                {
+                    return Unauthorized();
+                }
+            }
+
+            try
+            {
+                _AppointmentManager.UpdateAppointmentStatus(id, status);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpPut("{id:int}")]
         public IActionResult CancelAppointment(int id)
         {
             if (id <= 0)
@@ -85,11 +143,32 @@ namespace HospitalManagementSystemPhase2.Controllers
                 return BadRequest("Invalid ID.");
             }
 
+            var app = _AppointmentManager.GetAppointmentById(id);
+
+            if (User.IsInRole("Patient"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != app.Patient.UserId.ToString())
+                {
+                    return Unauthorized();
+                }
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+                
+                if (loggedInUserId == null || loggedInUserId != app.Doctor.UserId.ToString())
+                {
+                    return Unauthorized();
+                }
+            }
+
             try
             {
                 _AppointmentManager.CancelAppointment(id);
                 return NoContent();
-                //return Ok($"Appointment with ID {id} has been canceled.");
             }
             catch (KeyNotFoundException ex)
             {

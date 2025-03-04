@@ -1,5 +1,5 @@
-using HospitalManagementSystem;
-using HospitalManagementSystem.Managements;
+using HospitalManagementSystemPhase2;
+using HospitalManagementSystemPhase2.Managements;
 using HospitalManagementSystemPhase2.Managers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

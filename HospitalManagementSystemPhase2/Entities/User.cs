@@ -1,4 +1,4 @@
-﻿using HospitalManagementSystem.Entities;
+﻿using HospitalManagementSystemPhase2.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 

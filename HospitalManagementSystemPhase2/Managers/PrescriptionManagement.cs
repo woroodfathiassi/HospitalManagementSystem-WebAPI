@@ -1,5 +1,5 @@
 ﻿using Azure;
-using HospitalManagementSystem.Entities;
+using HospitalManagementSystemPhase2.Entities;
 using HospitalManagementSystemPhase2.MyExceptions;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,7 +10,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HospitalManagementSystem.Managements
+namespace HospitalManagementSystemPhase2.Managements
 {
     public class PrescriptionManagement
     {
@@ -31,6 +31,11 @@ namespace HospitalManagementSystem.Managements
         {
             return _context.Prescriptions.FirstOrDefault(p => p.PrescriptionId == id);
             
+        }
+
+        public List<Prescription> GetPatientPrescriptiond(int id)
+        {
+            return _context.Prescriptions.Where(p => p.PatientId == id).AsNoTracking().ToList();
         }
 
         public void IssuePrescription(Prescription pre)

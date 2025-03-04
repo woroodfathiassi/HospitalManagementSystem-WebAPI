@@ -1,4 +1,4 @@
-﻿using HospitalManagementSystem.Entities;
+﻿using HospitalManagementSystemPhase2.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HospitalManagementSystem.Managements
+namespace HospitalManagementSystemPhase2.Managements
 {
     public class DoctorManagement
     {

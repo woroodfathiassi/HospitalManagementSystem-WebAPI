@@ -1,5 +1,4 @@
-﻿using HospitalManagementSystem.Entities;
-using HospitalManagementSystemPhase2.Entities;
+﻿using HospitalManagementSystemPhase2.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HospitalManagementSystem
+namespace HospitalManagementSystemPhase2
 {
     public class HMSDBContext: DbContext
     {

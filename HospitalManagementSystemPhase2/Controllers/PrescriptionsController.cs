@@ -1,12 +1,14 @@
-﻿using HospitalManagementSystem.Entities;
-using HospitalManagementSystem.Managements;
+﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Managements;
 using HospitalManagementSystemPhase2.MyExceptions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HospitalManagementSystemPhase2.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
+    [Authorize]
     public class PrescriptionsController : ControllerBase
     {
         PrescriptionManagement _PrescriptionManager;
@@ -16,6 +18,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public IActionResult GetPrescriptions()
         {
             var prescriptions = _PrescriptionManager.GetAllPrescriptions();
@@ -23,6 +26,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin,Doctor")]
         public IActionResult AddPrescription([FromBody] Prescription prescription)
         {
             if (prescription == null)
@@ -47,7 +51,8 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet("{id:int}")]
-        public IActionResult GetDoctor(int id)
+        [Authorize(Roles = "Admin")]
+        public IActionResult GetPrescription(int id)
         {
             if (id <= 0)
             {
@@ -65,6 +70,7 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpPut("{id:int}")]
+        [Authorize(Roles = "Admin")]
         public IActionResult UpdatePrescription(int id, [FromBody] Prescription prescription)
         {
             var pre = _PrescriptionManager.GetPrescriptionById(id);
@@ -97,6 +103,29 @@ namespace HospitalManagementSystemPhase2.Controllers
                 return BadRequest(ex.Message);
             }
             return NoContent();
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Patient")]
+        public IActionResult GetPatientPrescriptiond([FromQuery] int patientId)
+        {
+            if (patientId <= 0)
+            {
+                return BadRequest("Invalid patient ID.");
+            }
+
+            if (User.IsInRole("Patient"))
+            {
+                var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                if (loggedInUserId == null || loggedInUserId != patientId.ToString())
+                {
+                    return Unauthorized();
+                }
+            }
+
+            var prescriptions = _PrescriptionManager.GetPatientPrescriptiond(patientId);
+            return Ok(prescriptions);
         }
     }
 }

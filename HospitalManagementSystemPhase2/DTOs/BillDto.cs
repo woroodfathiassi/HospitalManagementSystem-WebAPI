@@ -1,4 +1,4 @@
-﻿using HospitalManagementSystem.Entities;
+﻿using HospitalManagementSystemPhase2.Entities;
 
 namespace HospitalManagementSystemPhase2.DTOs
 {

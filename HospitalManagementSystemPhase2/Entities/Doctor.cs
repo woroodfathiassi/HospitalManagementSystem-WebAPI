@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HospitalManagementSystem.Entities
+namespace HospitalManagementSystemPhase2.Entities
 {
     public class Doctor: Person
     {
