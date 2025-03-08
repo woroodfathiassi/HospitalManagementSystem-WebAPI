@@ -1,4 +1,5 @@
 ﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,58 +11,76 @@ namespace HospitalManagementSystemPhase2.Managements
 {
     public class MedicationManagement
     {
-        private readonly HMSDBContext _context;
-        public MedicationManagement(HMSDBContext context)
+        private readonly MedicationDBAccess _context;
+        public MedicationManagement(MedicationDBAccess context)
         {
             _context = context;
         }
 
         public List<Medication> GetAllMedications()
         {
-            return _context.Medications.AsNoTracking().ToList();
+            return _context.GetAllMedications();
         }
 
         public Medication GetMedicationById(int id)
         {
-            return _context.Medications.FirstOrDefault(p => p.MedicationId == id);
+            return _context.GetMedicationById(id);
         }
 
         public void AddMedication(Medication medication)
         {
+            if (medication == null)
+            {
+                throw new ArgumentNullException("Medication data is required.");
+            }
+
             ValidateMedication(medication);
 
-            _context.Medications.Add(medication);
-            _context.SaveChanges();
+            _context.AddMedication(medication);
         }
 
-        public void UpdateMedication(Medication med)
+        public void UpdateMedication(int id, Medication newMed)
         {
-            var medication = _context.Medications.FirstOrDefault(m => m.MedicationId == med.MedicationId);
-
-            ValidateMedication(med);
-
-            medication.Name = med.Name;
-            medication.Quantity = med.Quantity;
-            medication.Price = med.Price;
-
-            _context.SaveChanges();
-        }
-
-        public void TrackMedicationInventory()
-        {
-            var medications = _context.Medications.ToList();
-            foreach (var medication in medications)
+            if (id <= 0)
             {
-                Console.WriteLine($"Id: {medication.MedicationId}, Name: {medication.Name}, Quantity: {medication.Quantity}");
+                throw new ArgumentException("Invalid ID.");
             }
+
+            if (newMed == null)
+            {
+                throw new ArgumentNullException("Medication data is required.");
+            }
+
+            if (id != newMed.MedicationId)
+            {
+                throw new ArgumentException("Invalid Ids.");
+            }
+
+            var currentMed = _context.GetMedicationById(newMed.MedicationId);
+            if (currentMed == null)
+            {
+                throw new KeyNotFoundException($"Medication with ID {newMed.MedicationId} not found.");
+            }
+
+            ValidateMedication(newMed);
+
+            _context.UpdateMedication(newMed, currentMed);
         }
 
         public void DeleteMedication(int id) 
         {
-            var med = GetMedicationById(id);
+            if (id <= 0)
+            {
+                throw new ArgumentException("Invalid ID.");
+            }
 
-            _context.Medications.Remove(med);
-            _context.SaveChanges();
+            var medication = _context.GetMedicationById(id);
+            if (medication == null)
+            {
+                throw new KeyNotFoundException($"Medication with ID {medication.MedicationId} not found.");
+            }
+
+            _context.DeleteMedication(medication);
         }
 
         private void ValidateMedication(Medication medication)

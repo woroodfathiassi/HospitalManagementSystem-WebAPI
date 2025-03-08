@@ -14,13 +14,13 @@ namespace HospitalManagementSystemPhase2.Entities
 
         public List<Medication> Medications { get; set; }
 
-        public Bill Bill {  get; set; }
+        public Bill? Bill {  get; set; }
 
         public int DoctorId { get; set; }
-        public Doctor Doctor { get; set; }
+        public Doctor? Doctor { get; set; }
 
         public int PatientId { get; set; }
-        public Patient Patient { get; set; }
+        public Patient? Patient { get; set; }
 
         public override string ToString()
         {

@@ -11,7 +11,7 @@ namespace HospitalManagementSystemPhase2.Entities
         [Required]
         public string UserName { get; set; }
         [Required]
-        public string Password { get; set; }
+        public string Password { get; set; } = "1212";
 
         [Required]
         public int RoleId { get; set; }

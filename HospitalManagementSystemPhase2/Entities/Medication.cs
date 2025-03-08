@@ -13,7 +13,7 @@ namespace HospitalManagementSystemPhase2.Entities
         public int MedicationId { get; set; }
 
         [StringLength(120)]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public int Quantity { get; set; }
 

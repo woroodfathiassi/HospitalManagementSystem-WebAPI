@@ -8,60 +8,76 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using HospitalManagementSystemPhase2.Services;
+using System.Transactions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace HospitalManagementSystemPhase2.Managers
 {
-    public class AuthManagement
+    public class AccountManagement
     {
-        private readonly HMSDBContext _context;
+        private readonly AccountDBAccess _accountDBAccess;
         private readonly IConfiguration _configuration;
 
-        public AuthManagement(HMSDBContext context, IConfiguration configuration)
+        public AccountManagement(AccountDBAccess accountDBAccess, IConfiguration configuration)
         {
-            _context = context;
+            _accountDBAccess = accountDBAccess;
             _configuration = configuration;
         }
 
         public void Register(UserDto user)
         {
+            if (user == null)
+                throw new ArgumentNullException("User data cannot be null.");
 
-            var existingUser = _context.Users.FirstOrDefault(u => u.UserName == user.UserName);
+
+            var existingUser = _accountDBAccess.GetUserByUsername(user.UserName);
             if (existingUser != null)
                 throw new UsernameAlreadyExistsException("Username already exists");
 
+            var role = _accountDBAccess.GetRoleById(user.RoleId);
+            if (role == null)
+                throw new ArgumentException("Invalid Role ID");
 
             var newUser = new User
             {
                 UserName = user.UserName,
                 Password = user.Password,
-                RoleId = user.RoleId
+                Role = role
             };
 
-            var role = _context.Roles.FirstOrDefault(r => r.Id == user.RoleId);
-            if (role == null)
-                throw new ArgumentException("Invalid Role ID");
-            else if (role.Name.Equals("Doctor"))
+            using (var transaction = _accountDBAccess.BeginTransaction())
             {
-                var doc = new Doctor { Name = newUser.UserName, User = newUser };
-                _context.Doctors.Add(doc);
-                newUser.Doctor = doc;
-            }
-            else if (role.Name.Equals("Patient"))
-            {
-                var pat = new Patient { Name = newUser.UserName, User = newUser };
-                _context.Patients.Add(pat);
-                newUser.Patient = pat;
-            }
+                try
+                {
+                    _accountDBAccess.RegisterNewUser(newUser);
 
-            _context.Users.Add(newUser);
-            _context.SaveChanges();
+                    if (role.Name.Equals("Doctor", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var doctor = new Doctor { Name = newUser.UserName, User = newUser };
+                        _accountDBAccess.AddNewDoctor(doctor);
+                        newUser.Doctor = doctor;
+                    }
+                    else if (role.Name.Equals("Patient", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var patient = new Patient { Name = newUser.UserName, User = newUser };
+                        _accountDBAccess.AddNewPatient(patient);
+                        newUser.Patient = patient;
+                    }
+
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception("User registration failed. Transaction rolled back.", ex);
+                }
+            }
         }
 
         public string Authenticate(LoginDto userlogin)
         {
-            var user = _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefault(u => u.UserName == userlogin.UserName && u.Password == userlogin.Password);
+            var user = _accountDBAccess.GetLoginUser(userlogin);
 
             if (user == null)
             {

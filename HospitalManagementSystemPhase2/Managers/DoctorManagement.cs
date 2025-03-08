@@ -1,4 +1,5 @@
 ﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,71 +11,68 @@ namespace HospitalManagementSystemPhase2.Managements
 {
     public class DoctorManagement
     {
-        private readonly HMSDBContext _context;
-        public DoctorManagement(HMSDBContext context)
+        private readonly DoctorDBAccess _doctorDBAccess;
+        public DoctorManagement(DoctorDBAccess doctorDBAccess)
         {
-            _context = context;
+            _doctorDBAccess = doctorDBAccess;
         }
 
         public List<Doctor> GetAllDoctors()
         {
-            return _context.Doctors.AsNoTracking().ToList();
+            return _doctorDBAccess.GetAllDoctors();
         }
 
-        public Patient GetDoctorById(int id)
+        public Doctor GetDoctorById(int docId)
         {
-            var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
-            return patient;
+            if (docId <= 0)
+                throw new ArgumentException("Invalid doctor ID.");
+
+            var doc = _doctorDBAccess.GetDoctorById(docId);
+            if(doc == null)
+                throw new KeyNotFoundException($"Doctor with ID {docId} not found.");
+            return doc; 
         }
+
 
         public void AddNewDoctor(Doctor doctor)
         {
-            ValidateDoctor(doctor);
+            if(doctor == null)
+                throw new ArgumentNullException("Doctor data is required.");
 
-            _context.Doctors.Add(doctor);
-            _context.SaveChanges();
+            _doctorDBAccess.AddNewDoctor(doctor);
         }
 
-        public void UpdateDoctor(Doctor doc)
+        public void UpdateDoctor(Doctor docUpdated)
         {
-            var doctor = _context.Doctors.FirstOrDefault(p => p.Id == doc.Id);
+            if(docUpdated == null)
+            {
+                throw new ArgumentNullException("Doctor data is required.");
+            }
 
-            ValidateDoctor(doc);
+            var doctor = _doctorDBAccess.GetDoctorById(docUpdated.Id);
+            if (doctor == null)
+                throw new KeyNotFoundException($"Doctor with ID {docUpdated.Id} not found.");
 
-            doctor.Name = doc.Name;
-            doctor.Age = doc.Age;
-            doctor.Gender = doc.Gender;
-            doctor.ContactNumber = doc.ContactNumber;
-            doctor.Address = doc.Address;
-            doctor.Email = doc.Email;
-            doctor.Specialty = doc.Specialty;
+            ValidateDoctor(docUpdated);
 
-            _context.SaveChanges();
+            _doctorDBAccess.UpdateDoctor(doctor, docUpdated);
         }
 
         public void DeleteDoctor(int doctorId)
         {
-            var doctor = _context.Doctors.FirstOrDefault(p => p.Id == doctorId);
+            var doctor = _doctorDBAccess.GetDoctorById(doctorId);
 
             if (doctor is null)
-            {
-                return;
-            }
+                throw new ArgumentException($"Doctor with ID {doctorId} not found.");
 
-            _context.Doctors.Remove(doctor);
-            _context.SaveChanges();
+            _doctorDBAccess.DeleteDoctor(doctor);
         }
 
         private void ValidateDoctor(Doctor doctor)
         {
-            if (doctor == null)
-            {
-                throw new ArgumentNullException(nameof(doctor), "Patient data cannot be null.");
-            }
-
             if (string.IsNullOrEmpty(doctor.Name))
             {
-                throw new ArgumentException("Patient name cannot be empty.");
+                throw new ArgumentNullException("Doctor name cannot be empty.");
             }
 
             if (doctor.Age < 0 || doctor.Age > 120)

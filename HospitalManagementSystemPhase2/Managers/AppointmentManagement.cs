@@ -1,4 +1,6 @@
-﻿using HospitalManagementSystemPhase2.Entities;
+﻿using HospitalManagementSystemPhase2.DTOs;
+using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -10,9 +12,9 @@ namespace HospitalManagementSystemPhase2.Managements
 {
     public class AppointmentManagement
     {
-        private readonly HMSDBContext _context;
+        private readonly AppointmentDBAccess _context;
 
-        public AppointmentManagement(HMSDBContext context) 
+        public AppointmentManagement(AppointmentDBAccess context) 
         {
             
             _context = context;
@@ -20,94 +22,134 @@ namespace HospitalManagementSystemPhase2.Managements
 
         public List<Appointment> GetAllAppointments()
         {
-            return _context.Appointments.AsNoTracking().ToList();
+            return _context.GetAllAppointments();
         }
 
         public Appointment GetAppointmentById(int id)
         {
-            var appointment = _context.Appointments.FirstOrDefault(p => p.AppointmentId == id);
-            return appointment;
+            if (id <= 0)
+                throw new ArgumentException("Invalid ID.");
+
+            return _context.GetAppointmentById(id);
         }
 
         public void ScheduleAppointment(Appointment appointment)
         {
-            var patient = _context.Patients.FirstOrDefault(p => p.Id == appointment.PatientId);
+            if (appointment == null)
+            {
+                throw new ArgumentNullException("Appointment data is required.");
+            }
+
+            var patient = _context.GetPatientById(appointment.PatientId);
 
             if (patient == null)
             {
                 throw new KeyNotFoundException($"There is no any patient with {appointment.PatientId} ID!");
             }
 
-            var doctor = _context.Doctors.FirstOrDefault(p => p.Id == appointment.DoctorId);
+            var doctor = _context.GetDoctorById(appointment.DoctorId);
 
             if (doctor == null)
             {
                 throw new KeyNotFoundException($"There is no any doctor with {appointment.DoctorId} ID!");
             }
 
-            bool isDoctorAvailiable = _context.Appointments.Any(d => d.DoctorId == appointment.DoctorId && d.AppointmentDate.Equals(appointment.AppointmentDate));
+            bool isDoctorAvailiable = _context.isDoctorAvailiable(appointment);
 
             if (isDoctorAvailiable)
             {
                 throw new InvalidOperationException($"Doctor {doctor.Name} is not available at {appointment.AppointmentDate}");
             }
 
-            bool hasPatientSchedule = _context.Appointments.Any(d => d.PatientId == appointment.PatientId && d.AppointmentDate.Equals(appointment.AppointmentDate));
+            bool hasPatientSchedule = _context.hasPatientSchedule(appointment);
 
             if (hasPatientSchedule)
             {
                 throw new InvalidOperationException($"Patient {patient.Name} is not available at {appointment.AppointmentDate}");
             }
 
-            _context.Appointments.Add(new Entities.Appointment 
-            { 
-                AppointmentDate = appointment.AppointmentDate, 
-                Patient = patient, 
-                Doctor = doctor, 
-                Status = AppointmentStatus.Scheduled 
-            });
-            _context.SaveChanges();
+            var newApp = new Appointment
+            {
+                AppointmentDate = appointment.AppointmentDate,
+                Patient = patient,
+                Doctor = doctor,
+                Status = AppointmentStatus.Scheduled
+            };
+             
+            _context.ScheduleAppointment(newApp);
         }
     
-        public List<Appointment> GetScheduleByPatientId(int patientId)
+        public List<AppointmentDto> GetScheduleByPatientId(int patientId)
         {
-            bool isPatient = _context.Appointments.Any(p => p.PatientId == patientId);
+            if (patientId <= 0)
+            {
+                throw new ArgumentException("Invalid appointment with patient ID.");
+            }
+
+            bool isPatient = _context.CheckPatientById(patientId);
 
             if (!isPatient)
             {
                 throw new KeyNotFoundException($"There is no any patient with {patientId} ID!");
             }
 
-            var appointments = _context.Appointments.Include(p => p.Patient).Where(p => p.PatientId == patientId).AsNoTracking().ToList();
+            var appointments = _context.GetScheduleByPatientId(patientId);
+            if (!appointments.Any())
+            {
+                 throw new KeyNotFoundException($"No appointments found for patient ID {patientId}.");
+            }
 
             return appointments;
         }
 
-        public List<Appointment> GetScheduleByDoctorId(int doctorId)
+        public List<AppointmentDto> GetScheduleByDoctorId(int doctorId)
         {
-            bool isDoctor = _context.Appointments.Any(p => p.DoctorId == doctorId);
+            if (doctorId <= 0)
+            {
+                throw new ArgumentException($"Invalid appointment with doctor with ID {doctorId}.");
+            }
+
+            bool isDoctor = _context.CheckDoctorById(doctorId);
 
             if (!isDoctor)
             {
-                throw new KeyNotFoundException($"There is no any doctor with {doctorId} ID!");
+                throw new KeyNotFoundException($"There is no any doctor with ID {doctorId}!");
             }
 
-            var appointments = _context.Appointments.Include(p => p.Doctor).Where(p => p.DoctorId == doctorId).AsNoTracking().ToList();
+            var appointments = _context.GetScheduleByDoctorId(doctorId);
+            if (!appointments.Any())
+            {
+                throw new KeyNotFoundException($"No appointments found for doctor ID {doctorId}.");
+            }
 
             return appointments;
+        }
+
+        public Doctor GetDoctorById(int docId)
+        {
+            if (docId <= 0)
+                throw new ArgumentException("Invalid doctor ID.");
+
+            var doc = _context.GetDoctorById(docId);
+            if (doc == null)
+                throw new KeyNotFoundException($"Doctor with ID {docId} not found.");
+            return doc;
+        }
+
+        public Patient GetPatientById(int patId)
+        {
+            if (patId <= 0)
+                throw new ArgumentException("Invalid doctor ID.");
+
+            var pat = _context.GetPatientById(patId);
+            if (pat == null)
+                throw new KeyNotFoundException($"Patient with ID {patId} not found.");
+            return pat;
         }
 
         public void CancelAppointment(int id)
         {
-            var appointment = _context.Appointments.FirstOrDefault(p => p.AppointmentId == id);
-
-            if (appointment == null) 
-            {
-                throw new KeyNotFoundException($"There is no any appointment with {id} ID!");
-            }
-
-            appointment.Status = AppointmentStatus.Canceled;
-            _context.SaveChanges();
+            _context.CancelAppointment(id);
         }
 
         //public void UpdateAppointment(int id, int patientId, int doctorId, DateTime datetime, int status)
@@ -129,16 +171,12 @@ namespace HospitalManagementSystemPhase2.Managements
 
         public void UpdateAppointmentStatus(int id, int status)
         {
-            var appointment = _context.Appointments.FirstOrDefault(a => a.AppointmentId == id);
-
-            if (appointment is null)
+            if (id <= 0 || !new[] { 1, 2, 3 }.Contains(status))
             {
-                throw new KeyNotFoundException("Appointment not found.");
+                throw new ArgumentException("Invalid inputs.");
             }
 
-            appointment.Status = (AppointmentStatus)status;
-
-            _context.SaveChanges();
+            _context.UpdateAppointmentStatus(id, status);
         }
     }
 }

@@ -19,6 +19,7 @@ namespace HospitalManagementSystemPhase2.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
+        // http://localhost:5268/api/Prescriptions/GetPrescriptions
         public IActionResult GetPrescriptions()
         {
             var prescriptions = _PrescriptionManager.GetAllPrescriptions();
@@ -27,6 +28,15 @@ namespace HospitalManagementSystemPhase2.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Admin,Doctor")]
+        //http://localhost:5268/api/Prescriptions/AddPrescription
+        //{
+        //    "patientId": 1,
+        //    "doctorId": 5,
+        //    "medications": [
+        //        { "MedicationId": 20 },
+        //        { "MedicationId": 10 }
+        //    ]
+        //}
         public IActionResult AddPrescription([FromBody] Prescription prescription)
         {
             if (prescription == null)
@@ -52,6 +62,7 @@ namespace HospitalManagementSystemPhase2.Controllers
 
         [HttpGet("{id:int}")]
         [Authorize(Roles = "Admin")]
+        // http://localhost:5268/api/Prescriptions/GetPrescription/1
         public IActionResult GetPrescription(int id)
         {
             if (id <= 0)
@@ -71,8 +82,29 @@ namespace HospitalManagementSystemPhase2.Controllers
 
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin")]
+        // http://localhost:5268/api/Prescriptions/UpdatePrescription/2
+        //{
+        //    "PrescriptionId" : 2,
+        //    "patientId": 1,
+        //    "doctorId": 5,
+        //    "medications": [
+        //        { "MedicationId": 10 },
+        //        { "MedicationId": 20 },
+        //        { "MedicationId": 30 }
+        //    ]
+        //}
         public IActionResult UpdatePrescription(int id, [FromBody] Prescription prescription)
         {
+            if (id <= 0)
+            {
+                return BadRequest("Invalid Id.");
+            }
+
+            if (prescription == null)
+            {
+                return BadRequest("Prescription data is required.");
+            }
+
             var pre = _PrescriptionManager.GetPrescriptionById(id);
 
             if (pre == null)
@@ -83,11 +115,6 @@ namespace HospitalManagementSystemPhase2.Controllers
             if (id != prescription.PrescriptionId)
             {
                 return BadRequest("Invalid Ids.");
-            }
-
-            if (prescription == null)
-            {
-                return BadRequest("Prescription data is required.");
             }
 
             try
@@ -107,6 +134,7 @@ namespace HospitalManagementSystemPhase2.Controllers
 
         [HttpGet]
         [Authorize(Roles = "Admin,Patient")]
+        //http://localhost:5268/api/Prescriptions/GetPatientPrescriptiond?patientId=3
         public IActionResult GetPatientPrescriptiond([FromQuery] int patientId)
         {
             if (patientId <= 0)
@@ -114,14 +142,17 @@ namespace HospitalManagementSystemPhase2.Controllers
                 return BadRequest("Invalid patient ID.");
             }
 
+            var pat = _PrescriptionManager.GetPatientById(patientId);
+
             if (User.IsInRole("Patient"))
             {
                 var loggedInUserId = User.FindFirst("UserId")?.Value;
 
-                if (loggedInUserId == null || loggedInUserId != patientId.ToString())
-                {
+                if (!int.TryParse(loggedInUserId, out int userId))
                     return Unauthorized();
-                }
+
+                if (userId != pat.UserId)
+                    return Unauthorized();
             }
 
             var prescriptions = _PrescriptionManager.GetPatientPrescriptiond(patientId);

@@ -1,8 +1,10 @@
 ﻿using HospitalManagementSystemPhase2.Entities;
+using HospitalManagementSystemPhase2.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,62 +12,60 @@ namespace HospitalManagementSystemPhase2.Managements
 {
     public class PatientManagement
     {
-        private readonly HMSDBContext _context;
-        public PatientManagement(HMSDBContext context) 
+        private readonly PatientDBAccess _patientDBAccess;
+        public PatientManagement(PatientDBAccess patientDBAccess) 
         {
-            _context = context;
+            _patientDBAccess = patientDBAccess;
         }
 
         public List<Patient> GetAllPatients()
         {
-            return _context.Patients.AsNoTracking().ToList();
+            return _patientDBAccess.GetAllPatients();
         }
 
-        public Patient GetPatientById(int id)
+        public Patient GetPatientById(int patId)
         {
-            var patient = _context.Patients.FirstOrDefault(p => p.Id == id);
-            return patient;
+            if (patId <= 0)
+                throw new ArgumentException("Invalid doctor ID.");
+
+            var pat = _patientDBAccess.GetPatientById(patId);
+            if (pat == null)
+                throw new KeyNotFoundException($"Patient with ID {patId} not found.");
+            return pat;
         }
 
         public void AddNewPatient(Patient patient)
         {
-            ValidatePatient(patient);
+            if (patient == null)
+                throw new ArgumentNullException("Patient data is required.");
 
-            _context.Patients.Add(patient);
-            _context.SaveChanges();
-
-            //await _context.Patients.AddAsync(patient);
-            //await _context.SaveChangesAsync();
+            _patientDBAccess.AddNewPatient(patient);
         }
 
-        public void UpdatePatient(Patient pat)
+        public void UpdatePatient(Patient patUpdated)
         {
-            var patient = _context.Patients.FirstOrDefault(p => p.Id == pat.Id);
+            if (patUpdated == null)
+            {
+                throw new ArgumentNullException("Patient data is required.");
+            }
 
-            ValidatePatient(pat);
+            var patient = _patientDBAccess.GetPatientById(patUpdated.Id);
+            if (patient == null)
+                throw new KeyNotFoundException($"Patient with ID {patUpdated.Id} not found.");
 
-            patient.Name = pat.Name;
-            patient.Age = pat.Age;
-            patient.Gender = pat.Gender;
-            patient.ContactNumber = pat.ContactNumber;
-            patient.Address = pat.Address;
+            ValidatePatient(patUpdated);
 
-            //_context.Entry(patient).CurrentValues.SetValues(pat);
-
-            _context.SaveChanges();
+            _patientDBAccess.UpdatePatient(patient, patUpdated);
         }
 
         public void DeletePatient(int patientId)
         {
-            var patient = _context.Patients.FirstOrDefault(p => p.Id == patientId);
+            var patient = _patientDBAccess.GetPatientById(patientId);
 
             if (patient is null)
-            {
-                return;
-            }
+                throw new ArgumentException($"Patient with ID {patientId} not found.");
 
-            _context.Patients.Remove(patient);
-            _context.SaveChanges();
+            _patientDBAccess.DeletePatient(patient);
         }
 
         private void ValidatePatient(Patient patient)
@@ -102,7 +102,5 @@ namespace HospitalManagementSystemPhase2.Managements
                 throw new ArgumentException("Address cannot be empty.");
             }
         }
-
-
     }
 }

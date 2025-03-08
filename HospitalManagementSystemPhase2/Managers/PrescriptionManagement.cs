@@ -38,6 +38,11 @@ namespace HospitalManagementSystemPhase2.Managements
             return _context.Prescriptions.Where(p => p.PatientId == id).AsNoTracking().ToList();
         }
 
+        public Patient GetPatientById(int id)
+        {
+            return _context.Patients.FirstOrDefault(p => p.Id == id);
+        }
+
         public void IssuePrescription(Prescription pre)
         {
             var patient = _context.Patients.FirstOrDefault(p => p.Id == pre.PatientId);
@@ -84,8 +89,8 @@ namespace HospitalManagementSystemPhase2.Managements
             var prescription = new Prescription
             {
                 PrescriptionDate = DateTime.Now,
-                DoctorId = pre.PatientId,
-                PatientId = pre.DoctorId,
+                DoctorId = pre.DoctorId,
+                PatientId = pre.PatientId,
                 Medications = medicationAvaliables
             };
 
@@ -113,9 +118,13 @@ namespace HospitalManagementSystemPhase2.Managements
             }
         }
 
+
+
         public void UpdatePrescription(Prescription pre)
         {
-            var prescription = _context.Prescriptions.FirstOrDefault(p => p.PrescriptionId == pre.PrescriptionId);
+            var prescription = _context.Prescriptions
+            .Include(p => p.Medications)
+            .FirstOrDefault(p => p.PrescriptionId == pre.PrescriptionId);
 
             if (prescription is null)
             {
@@ -126,52 +135,46 @@ namespace HospitalManagementSystemPhase2.Managements
             prescription.DoctorId = pre.DoctorId;
 
             var totalPrice = 0m;
-            var medicationAvaliables = new List<Medication>();
-            for (int i = 0; i < pre.Medications.Count; i++)
+
+            var existingMedicationIds = prescription.Medications.Select(m => m.MedicationId).ToList();
+            var newMedications = new List<Medication>();
+            foreach (var med in pre.Medications)
             {
-                var medication = _context.Medications.FirstOrDefault(p => p.MedicationId == pre.Medications[i].MedicationId);
+                var medication = _context.Medications.FirstOrDefault(p => p.MedicationId == med.MedicationId);
+
 
                 if (medication == null)
                 {
-                    throw new KeyNotFoundException($"There is no any medication with {pre.Medications[i].MedicationId} ID!");
+                    //throw new KeyNotFoundException($"There is no any medication with {pre.Medications[i].MedicationId} ID!");
                 }
                 else
                 {
                     if (medication.Quantity <= 0)
                     {
-                        throw new MedicationOutOfStockException(pre.Medications[i].MedicationId);
+                        //throw new MedicationOutOfStockException(pre.Medications[i].MedicationId);
                     }
-                    else
+
+                    if (existingMedicationIds.Contains(med.MedicationId))
                     {
                         totalPrice += medication.Price;
-                        medication.Quantity--;
-                        medicationAvaliables.Add(medication);
+                        newMedications.Add(medication);
+                    }
+                    else if(!existingMedicationIds.Contains(med.MedicationId))
+                    {
+                        totalPrice += medication.Price;
+                        if (medication.Quantity > 0)
+                            medication.Quantity--;
+                        newMedications.Add(medication);
                     }
                 }
-
             }
 
-            prescription.Medications = medicationAvaliables;
+            prescription.Medications = newMedications;
 
             var bill = _context.Bills.FirstOrDefault(p => p.PrescriptionId == pre.PrescriptionId);
             bill.Amount = totalPrice;
             
             _context.SaveChanges();
         }
-
-        //public void DeletePrescription(int preId)
-        //{
-        //    var pre = _context.Prescriptions.FirstOrDefault(p => p.PrescriptionId == preId);
-
-        //    if (pre is null)
-        //    {
-        //        Console.WriteLine("Prescription not found.");
-        //        return;
-        //    }
-
-        //    _context.Prescriptions.Remove(pre);
-        //    _context.SaveChanges();
-        //    Console.WriteLine("Prescription deleted successfully.");
-        //}
     }
 }

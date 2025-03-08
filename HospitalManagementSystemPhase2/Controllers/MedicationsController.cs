@@ -18,87 +18,94 @@ namespace HospitalManagementSystemPhase2.Controllers
         }
 
         [HttpGet]
+        // http://localhost:5268/api/Medications/GetMedications
         public IActionResult GetMedications()
         {
-            var medications = _medicationManager.GetAllMedications();
-            return Ok(medications);
+            try
+            {
+                var medications = _medicationManager.GetAllMedications();
+                return Ok(medications);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+
         }
 
         [HttpPost]
+        // http://localhost:5268/api/Medications/AddMedication
         public IActionResult AddMedication([FromBody] Medication medication)
         {
-            if (medication == null)
-            {
-                return BadRequest("Medication data is required.");
-            }
-
             try
             {
                 _medicationManager.AddMedication(medication);
             }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
 
             return Created();
-            //return CreatedAtAction(nameof(GetPatient), new { id = patient.Id }, patient);
         }
 
         [HttpPut("{id:int}")]
+        // http://localhost:5268/api/Medications/UpdateMedication/1
         public IActionResult UpdateMedication(int id, [FromBody] Medication medication)
         {
-            if (id <= 0)
-            {
-                return BadRequest("Invalid ID.");
-            }
-
-            if (medication == null)
-            {
-                return BadRequest("Medication data is required.");
-            }
-
-            var med = _medicationManager.GetMedicationById(id);
-
-            if (med == null)
-            {
-                return NotFound($"Medication with ID {id} not found.");
-            }
-
-            if (id != medication.MedicationId)
-            {
-                return BadRequest("Invalid Ids.");
-            }
-
             try
             {
-                _medicationManager.UpdateMedication(medication);
+                _medicationManager.UpdateMedication(id, medication);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
 
             return NoContent();
         }
 
         [HttpDelete("{id:int}")]
+        // http://localhost:5268/api/Medications/DeleteMedication/4
         public IActionResult DeleteMedication(int id)
         {
-            if (id <= 0)
+            try
             {
-                return BadRequest("Invalid ID.");
+                _medicationManager.DeleteMedication(id);
+                return NoContent();
             }
-
-            var medication = _medicationManager.GetMedicationById(id);
-
-            if (medication == null)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound($"Patient with ID {id} not found.");
+                return NotFound(ex.Message);
             }
-
-            _medicationManager.DeleteMedication(id);
-            return NoContent();
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
     }
 }

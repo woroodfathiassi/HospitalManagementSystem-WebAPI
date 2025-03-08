@@ -8,19 +8,18 @@ namespace HospitalManagementSystemPhase2.Controllers
 {
     [Route("api/[controller]/[action]")]
     [ApiController]
-    [Authorize]
-    public class AuthController: ControllerBase
+    public class AccountController: ControllerBase
     {
-        AuthManagement _AuthManager;
+        AccountManagement _AuthManager;
 
-        public AuthController(AuthManagement authManager)
+        public AccountController(AccountManagement authManager)
         {
             _AuthManager = authManager;
         }
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public IActionResult Register([FromBody]UserDto user)
+        public IActionResult Register([FromBody] UserDto user)
         {
             try
             {
@@ -31,11 +30,20 @@ namespace HospitalManagementSystemPhase2.Controllers
             {
                 return BadRequest(ex.Message);
             }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
             catch(ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
             
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+
         }
 
         [HttpPost]
@@ -49,6 +57,10 @@ namespace HospitalManagementSystemPhase2.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
     }

@@ -20,112 +20,127 @@ namespace HospitalManagementSystemPhase2.Controllers
         [Authorize(Roles = "Admin")]
         public IActionResult GetAppointments()
         {
-            var appointments = _AppointmentManager.GetAllAppointments();
-            return Ok(appointments);
+            try
+            {
+                var appointments = _AppointmentManager.GetAllAppointments();
+                return Ok(appointments);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpPost]
-        //[Authorize(Roles = "Admin,Doctor,Patient")]
+        [Authorize(Roles = "Admin,Doctor,Patient")]
         public IActionResult ScheduleAppointment([FromBody] Appointment appointment)
         {
-            if (appointment == null)
-            {
-                return BadRequest("Appointment data is required.");
-            }
-
             try
             {
                 _AppointmentManager.ScheduleAppointment(appointment);
+                return Created();
             }
-            catch (ArgumentException ex)
+            catch(ArgumentNullException ex) { return BadRequest(ex.Message); }
+            catch (KeyNotFoundException ex) { return BadRequest(ex.Message); }
+            catch(InvalidOperationException ex) { return BadRequest($"Invalid operation: {ex.Message}"); }
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
-
-            return Created();
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin,Patient")]
         public IActionResult GetAppointmentByPatientId([FromQuery]int patientId)
         {
-            if (patientId <= 0)
+            try
             {
-                return BadRequest("Invalid appointment with patient ID.");
-            }
-
-            if (User.IsInRole("Patient"))
-            {
-                var loggedInUserId = User.FindFirst("UserId")?.Value;
-
-                if (loggedInUserId == null || loggedInUserId != patientId.ToString())
+                if (User.IsInRole("Patient"))
                 {
-                    return Unauthorized();
+                    var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                    if (!int.TryParse(loggedInUserId, out int userId))
+                        return Unauthorized();
+
+                    var doc = _AppointmentManager.GetPatientById(patientId);
+
+                    if (userId != doc.UserId)
+                        return Unauthorized();
                 }
+
+                var appointments = _AppointmentManager.GetScheduleByPatientId(patientId);
+                return Ok(appointments);
             }
-
-            var appointments = _AppointmentManager.GetScheduleByPatientId(patientId);
-
-            if (!appointments.Any())
+            catch (ArgumentException ex)
             {
-                return NotFound($"No appointments found for patient ID {patientId}.");
+                return BadRequest(ex.Message);
+            }catch(KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
-
-            return Ok(appointments);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpGet]
         [Authorize(Roles = "Admin,Doctor")]
         public IActionResult GetAppointmentByDoctorId([FromQuery] int doctorId)
         {
-            if (doctorId <= 0)
+            try
             {
-                return BadRequest("Invalid appointment with doctor ID.");
-            }
-
-            if (User.IsInRole("Doctor"))
-            {
-                var loggedInUserId = User.FindFirst("UserId")?.Value;
-
-                if (loggedInUserId == null || loggedInUserId != doctorId.ToString())
+                if (User.IsInRole("Doctor"))
                 {
-                    return Unauthorized();
+                    var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                    if (!int.TryParse(loggedInUserId, out int userId))
+                        return Unauthorized();
+
+                    var doc = _AppointmentManager.GetDoctorById(doctorId);
+
+                    if (userId != doc.UserId)
+                        return Unauthorized();
                 }
+
+                var appointments = _AppointmentManager.GetScheduleByDoctorId(doctorId);
+                return Ok(appointments);
             }
-
-            var appointments = _AppointmentManager.GetScheduleByDoctorId(doctorId);
-
-            if (!appointments.Any())
+            catch (ArgumentException ex)
             {
-                return NotFound($"No appointments found for doctor ID {doctorId}.");
+                return BadRequest(ex.Message);
             }
-
-            return Ok(appointments);
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin,Doctor")]
-        public IActionResult UpdateAppointmentStatus(int id, int status)
+        public IActionResult UpdateAppointmentStatus(int id, [FromQuery] int status)
         {
-            if (id <= 0 || status <= 0)
-            {
-                return BadRequest("Invalid inputs.");
-            }
-
-            var app = _AppointmentManager.GetAppointmentById(id);
-
-            if (User.IsInRole("Doctor"))
-            {
-                var loggedInUserId = User.FindFirst("UserId")?.Value;
-
-                if (loggedInUserId == null || loggedInUserId != app.Doctor.UserId.ToString())
-                {
-                    return Unauthorized();
-                }
-            }
-
             try
             {
+                var app = _AppointmentManager.GetAppointmentById(id);
+                
+                if (User.IsInRole("Doctor"))
+                {
+                    var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                    if (!int.TryParse(loggedInUserId, out int userId))
+                        return Unauthorized();
+
+                    var doc = _AppointmentManager.GetDoctorById(app.DoctorId);
+
+                    if (userId != doc.UserId)
+                        return Unauthorized();
+                }
+
                 _AppointmentManager.UpdateAppointmentStatus(id, status);
                 return NoContent();
             }
@@ -133,36 +148,48 @@ namespace HospitalManagementSystemPhase2.Controllers
             {
                 return NotFound(ex.Message);
             }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
+
+
 
         [HttpPut("{id:int}")]
         public IActionResult CancelAppointment(int id)
         {
-            if (id <= 0)
-            {
-                return BadRequest("Invalid ID.");
-            }
-
             var app = _AppointmentManager.GetAppointmentById(id);
 
             if (User.IsInRole("Patient"))
             {
                 var loggedInUserId = User.FindFirst("UserId")?.Value;
 
-                if (loggedInUserId == null || loggedInUserId != app.Patient.UserId.ToString())
-                {
+                if (!int.TryParse(loggedInUserId, out int userId))
                     return Unauthorized();
-                }
+
+                var pat = _AppointmentManager.GetPatientById(app.PatientId);
+
+                if (userId != pat.UserId)
+                    return Unauthorized();
             }
+
 
             if (User.IsInRole("Doctor"))
             {
                 var loggedInUserId = User.FindFirst("UserId")?.Value;
-                
-                if (loggedInUserId == null || loggedInUserId != app.Doctor.UserId.ToString())
-                {
+
+                if (!int.TryParse(loggedInUserId, out int userId))
                     return Unauthorized();
-                }
+
+                var doc = _AppointmentManager.GetDoctorById(app.DoctorId);
+
+                if (userId != doc.UserId)
+                    return Unauthorized();
             }
 
             try
@@ -173,6 +200,14 @@ namespace HospitalManagementSystemPhase2.Controllers
             catch (KeyNotFoundException ex)
             {
                 return NotFound(ex.Message);
+            }
+            catch(ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
             }
         }
     }

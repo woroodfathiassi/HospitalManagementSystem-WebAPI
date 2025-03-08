@@ -1,5 +1,6 @@
 ﻿using HospitalManagementSystemPhase2.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +44,11 @@ namespace HospitalManagementSystemPhase2
 
             //modelBuilder.Entity<Prescription>().ToTable("Prescriptions", t => t.HasTrigger("Insert_Bill_Automatically"));
 
+        }
+
+        public IDbContextTransaction BeginTransaction()
+        {
+            return Database.BeginTransaction();
         }
 
     }

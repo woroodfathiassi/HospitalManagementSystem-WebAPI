@@ -2,6 +2,7 @@
 using HospitalManagementSystemPhase2.Managements;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Numerics;
 
 namespace HospitalManagementSystemPhase2.Controllers
 {
@@ -21,8 +22,15 @@ namespace HospitalManagementSystemPhase2.Controllers
         [Authorize(Roles = "Admin,Doctor")]
         public IActionResult GetPatients()
         {
-            var patients = _PatientManager.GetAllPatients();
-            return Ok(patients);
+            try
+            {
+                var patients = _PatientManager.GetAllPatients();
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
 
@@ -30,133 +38,122 @@ namespace HospitalManagementSystemPhase2.Controllers
         [Authorize(Roles = "Admin,Doctor,Patient")]
         public IActionResult GetPatient(int id)
         {
-            if (id <= 0)
-            {
-                return BadRequest("Invalid patient ID.");
-            }
-
-            if (User.IsInRole("Patient"))
-            {
-                var loggedInUserId = User.FindFirst("UserId")?.Value;
-
-                if (loggedInUserId == null || loggedInUserId != id.ToString())
-                {
-                    return Unauthorized();
-                }
-            }
-
-            var patient = _PatientManager.GetPatientById(id);
-
-            if (patient == null)
-            {
-                return NotFound($"Patient with ID {id} not found.");
-            }
-
-            return Ok(patient);
-        }
-        //[HttpGet("{id}")]
-        //public async Task<IActionResult> GetPatient([FromRoute] int id)
-        //{
-        //    if (id <= 0)
-        //    {
-        //        return BadRequest("Invalid patient ID.");
-        //    }
-
-        //    var patient = await _PatientManager.GetPatientByIdAsync(id);
-
-        //    return patient != null
-        //        ? Ok(patient)
-        //        : NotFound($"Patient with ID {id} not found.");
-        //}
-
-        [HttpPost]
-        [Authorize(Roles = "Admin,Doctor")]
-        public IActionResult AddPatient([FromBody]Patient patient)
-        {
-            if (patient == null)
-            {
-                return BadRequest("Patient data is required.");
-            }
-
             try
             {
-                _PatientManager.AddNewPatient(patient);
+                var pat = _PatientManager.GetPatientById(id);
+
+                if (User.IsInRole("Patient"))
+                {
+                    var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                    if (!int.TryParse(loggedInUserId, out int userId))
+                        return Unauthorized();
+
+                    if (userId != pat.UserId)
+                        return Unauthorized();
+                }
+
+                return Ok(pat);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
+        }
 
-            return Created();
-            //return CreatedAtAction(nameof(GetPatient), new { id = patient.Id }, patient);
+        [HttpPost]
+        [Authorize(Roles = "Admin,Doctor")]
+        public IActionResult AddPatient([FromBody]Patient patient)
+        {
+            try
+            {
+                _PatientManager.AddNewPatient(patient);
+                return Created();
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpPut("{id:int}")]
         [Authorize(Roles = "Admin,Doctor,Patient")]
         public IActionResult UpdatePatient(int id, [FromBody] Patient patient)
         {
-            if (id <= 0)
-            {
-                return BadRequest("Invalid ID.");
-            }
-
-            if (patient == null)
-            {
-                return BadRequest("Patient data is required.");
-            }
-
-            var pat = _PatientManager.GetPatientById(id);
-
-            if (pat == null)
-            {
-                return NotFound($"Patient with ID {id} not found.");
-            }
-
-            if (id != patient.Id)
-            {
-                return BadRequest("Invalid Ids.");
-            }
-
-            if (User.IsInRole("Patient"))
-            {
-                var loggedInUserId = User.FindFirst("UserId")?.Value;
-
-                if (loggedInUserId == null || loggedInUserId != id.ToString())
-                {
-                    return Unauthorized(); 
-                }
-            }
-
             try
             {
+                if (id != patient.Id)
+                {
+                    return BadRequest("Invalid Ids.");
+                }
+
+                if (User.IsInRole("Patient"))
+                {
+                    var loggedInUserId = User.FindFirst("UserId")?.Value;
+
+                    if (!int.TryParse(loggedInUserId, out int userId))
+                        return Unauthorized();
+
+                    var pat = _PatientManager.GetPatientById(id);
+
+                    if (userId != pat.UserId)
+                        return Unauthorized();
+                }
+
                 _PatientManager.UpdatePatient(patient);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (ArgumentNullException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "Admin,Doctor")]
         public IActionResult DeletePatient(int id)
         {
-            if (id <= 0)
+            try
             {
-                return BadRequest("Invalid ID.");
+                _PatientManager.DeletePatient(id);
+                return NoContent();
             }
-
-            var patient = _PatientManager.GetPatientById(id); 
-
-            if (patient == null)
+            catch (ArgumentException ex)
             {
-                return NotFound($"Patient with ID {id} not found.");
+                return NotFound(ex.Message);
             }
-
-            _PatientManager.DeletePatient(id);
-            return NoContent();
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred: {ex.Message}");
+            }
         }
 
     }

@@ -8,8 +8,8 @@ namespace HospitalManagementSystemPhase2.Entities
 {
     public enum BillStatus
     {
-        Paid, 
-        Unpaid
+        Paid = 1, 
+        Unpaid = 2
     }
 
     public class Bill
@@ -23,8 +23,7 @@ namespace HospitalManagementSystemPhase2.Entities
         public BillStatus Status { get; set; }
 
         public int PrescriptionId { get; set; }
-
-        public Prescription Prescription { get; set; }
+        public Prescription? Prescription { get; set; }
 
         public override string ToString()
         {
